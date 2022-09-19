@@ -1,0 +1,58 @@
+version: "3.0"
+
+services:
+    # Database
+    db:
+        image: mysql                
+        environment:
+            MYSQL_ROOT_PASSWORD: admin
+            MYSQL_DATABASE: koha
+            MYSQL_USER: koha
+            MYSQL_PASSWORD: koha
+        ports:
+           - "6033:3306"        
+    # Apache    
+    memcached:
+        image: memcached:alpine   
+    # IA
+    elasticsearch:
+        image: koha/elasticsearch-icu:6.x        
+        environment:
+            discovery.type: single-node        
+    # Koha Intranet
+    intranet:
+        build: .
+        image: koha:master        
+        ports:
+            - "8000:3000"
+        environment:
+            MOJO_MODE: development
+        depends_on:
+            - db
+            - memcached
+            - elasticsearch
+    # Koha OPAC
+    opac:
+        build: .
+        image: koha:master        
+        command: ["bin/opac", "prefork"]
+        ports:
+            - "8001:3000"
+        environment:
+            MOJO_MODE: development
+        depends_on:
+            - db
+            - memcached
+            - elasticsearch        
+    # PHPMyAdmin
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin        
+        depends_on:
+            - db
+        restart: always
+        environment:
+          PMA_HOST: db
+          MYSQL_ROOT_PASSWORD: admin         
+
+        ports:
+        - 8081:80
